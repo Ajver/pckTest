@@ -160,7 +160,7 @@ var Module=typeof Module!=="undefined"?Module:{};var IDHandler=function(){var id
 					path: destPath,
 					buffer: xhr.response
 				};
-				
+
 				var dir = LIBS.PATH.dirname(file.path);
 				try {
 					LIBS.FS.stat(dir);
@@ -171,8 +171,8 @@ var Module=typeof Module!=="undefined"?Module:{};var IDHandler=function(){var id
 					LIBS.FS.mkdirTree(dir);
 				}
 				LIBS.FS.createDataFile(file.path, null, new Uint8Array(file.buffer), true, true, false);
-				
-				gatewayToGodot.newEvent('pck_loaded', destPath);
+
+				console.log("Loaded additional pck to:", destPath);
 			});
 		}
 
