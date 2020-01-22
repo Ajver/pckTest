@@ -108,6 +108,11 @@ var Module=typeof Module!=="undefined"?Module:{};var IDHandler=function(){var id
 		}
 
 		this.preloadFile = function(pathOrBuffer, destPath) {
+			var afterLoad = preloadedFiles === null;
+			const loadFileFunc = this._loadFile;
+			if(afterLoad) {
+				preloadedFiles = [];
+			}
 
 			if (pathOrBuffer instanceof ArrayBuffer) {
 				pathOrBuffer = new Uint8Array(pathOrBuffer);
@@ -119,6 +124,9 @@ var Module=typeof Module!=="undefined"?Module:{};var IDHandler=function(){var id
 					path: destPath,
 					buffer: pathOrBuffer
 				});
+				if (afterLoad) {
+					loadFileFunc(preloadedFiles[0]);
+				}
 				return Promise.resolve();
 			} else if (typeof pathOrBuffer === 'string') {
 				return loadPromise(pathOrBuffer, preloadProgressTracker).then(function(xhr) {
@@ -126,11 +134,29 @@ var Module=typeof Module!=="undefined"?Module:{};var IDHandler=function(){var id
 						path: destPath || pathOrBuffer,
 						buffer: xhr.response
 					});
+					if (afterLoad) {
+						loadFileFunc(preloadedFiles[0]);
+					}
 				});
 			} else {
 				throw Promise.reject("Invalid object for preloading");
 			}
+
 		};
+
+		this._loadFile = function(file) {
+			var dir = LIBS.PATH.dirname(file.path);
+			try {
+				LIBS.FS.stat(dir);
+			} catch (e) {
+				if (e.code !== 'ENOENT') {
+					throw e;
+				}
+				LIBS.FS.mkdirTree(dir);
+			}
+			// With memory growth, canOwn should be false.
+			LIBS.FS.createDataFile(file.path, null, new Uint8Array(file.buffer), true, true, false);
+		}
 
 		this.start = function() {
 
@@ -143,6 +169,12 @@ var Module=typeof Module!=="undefined"?Module:{};var IDHandler=function(){var id
 
 			executableName = execName;
 			var mainArgs = [ '--main-pack', mainPack ];
+			
+			window.setTimeout(() => {
+				const modPack = 'RedScene.pck';
+				console.log("Preloading file: ", modPack);
+				this.preloadFile(modPack, getPathLeaf(modPack));
+			}, 20000);
 
 			return Promise.all([
 				// Load from directory,
