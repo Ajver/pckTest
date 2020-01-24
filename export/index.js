@@ -33,6 +33,9 @@ var Module=typeof Module!=="undefined"?Module:{};var IDHandler=function(){var id
 		return path.slice(path.lastIndexOf('/') + 1);
 	}
 
+	const PTH = 'http://ulr.com/fokimare.pck';
+	console.log("SLICE '" + PTH + "':", getPathLeaf(PTH) + "<?");
+
 	function getBasePath(path) {
 
 		if (path.endsWith('/'))
@@ -154,10 +157,13 @@ var Module=typeof Module!=="undefined"?Module:{};var IDHandler=function(){var id
 			);
 		};
 
-		this.loadAdditionalPck = (destPath) => {
-			loadPromise(destPath, preloadProgressTracker).then(function(xhr) {
+		this.loadAdditionalPck = (pckUrl) => {
+			const xhr = new XMLHttpRequest;
+			xhr.open('GET', pckUrl);
+			xhr.responseType = 'arraybuffer';
+			xhr.onload = () => {
 				const file = {
-					path: destPath,
+					path: getPathLeaf(pckUrl),
 					buffer: xhr.response
 				};
 				
@@ -172,8 +178,9 @@ var Module=typeof Module!=="undefined"?Module:{};var IDHandler=function(){var id
 				}
 				LIBS.FS.createDataFile(file.path, null, new Uint8Array(file.buffer), true, true, false);
 				
-				gatewayToGodot.newEvent('pck_loaded', destPath);
-			});
+				gatewayToGodot.newEvent('pck_loaded', file.path);
+			}
+			xhr.send();
 		}
 
 		function synchronousStart() {
